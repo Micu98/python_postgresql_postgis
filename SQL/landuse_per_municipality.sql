@@ -24,15 +24,18 @@
 -- leisure=sports_centre 			- Large areas that include facilities for various sports, often including green spaces.
 
 -- Query landuse and calculate area
+-- Dieser Code sucht nach grünen Flächen (z.B. Wälder, Wiesen) oder Freizeitflächen (z.B. Parks, Sportzentren) in der Stadt Zürich.
+-- Er berechnet die Fläche dieser Gebiete in Quadratmetern und gibt ihre Geometrie in einem globalen Koordinatensystem (EPSG:4326) zurück.
+-- Es werden nur die Gebiete ausgewählt, die sich vollständig innerhalb der Stadtgrenzen von Zürich befinden.
 SELECT
     p.osm_id,
     COALESCE(p.landuse, p.leisure) AS landuse_leisure,
-    ST_Area(ST_Transform(p.way, 32632)) AS area_sqm,
-    ST_Transform(p.way, 4326) AS geom
+    ST_Area(ST_Transform(p.way, 32632)) AS area_sqm, --Berechnet die Fläche des Gebiets in Quadratmetern (m²). Dafür wird die Geometrie (way) in das UTM-Koordinatensystem 32N (SRID 32632) transformiert
+    ST_Transform(p.way, 4326) AS geom -- Transformiert die Geometrie (way) in das WGS 84-Koordinatensystem (EPSG:4326), das für GPS-Daten und geografische Abfragen verwendet wird.
 FROM
     public.planet_osm_polygon AS p
 JOIN
-    public.planet_osm_polygon AS z ON ST_Contains(z.way, p.way)
+    public.planet_osm_polygon AS z ON ST_Contains(z.way, p.way) -- ein Polygon z (das Zürich repräsentiert) das Polygon p (das die Landnutzung oder Freizeitnutzung repräsentiert) vollständig enthält. Dies wird durch die Funktion ST_Contains erreicht, die überprüft, ob sich ein Polygon innerhalb eines anderen befindet.
 WHERE
     (p.landuse IN ('forest',
 					'grass',
@@ -59,9 +62,11 @@ WHERE
     AND z.name = 'Zürich';
 
 -- Aggregate area by landuse type
+-- Der Code berechnet die Gesamtfläche für bestimmte grüne Flächen (wie Wälder, Wiesen, Gärten) oder Freizeiteinrichtungen (wie Parks, Spielplätze) innerhalb der Stadt Zürich.
+-- Es gruppiert diese Flächen nach ihrer Art (Landnutzung oder Freizeit) und sortiert sie nach der Gesamtfläche in Quadratmetern in absteigender Reihenfolge.
 SELECT
-    COALESCE(p.landuse, p.leisure) AS landuse_leisure,
-    SUM(ST_Area(ST_Transform(p.way, 32632))) AS total_area_sqm
+    COALESCE(p.landuse, p.leisure) AS landuse_leisure, --  Die Funktion COALESCE gibt den ersten nicht-leeren Wert zurück. Hier prüft sie, ob p.landuse einen Wert hat; falls nicht, wird p.leisure verwendet
+    SUM(ST_Area(ST_Transform(p.way, 32632))) AS total_area_sqm -- Hier wird die Gesamtfläche der Polygone berechnet.
 FROM
     public.planet_osm_polygon AS p
 JOIN

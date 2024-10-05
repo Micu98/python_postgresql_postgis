@@ -13,8 +13,8 @@ WHERE p.SHOP = 'supermarket'
 	AND p."addr:housenumber" IS NOT NULL
 	AND p."addr:city" IS NOT NULL
 	AND p."addr:postcode" IS NOT NULL
-	AND EXISTS
+	AND EXISTS -- Diese Bedingung stellt sicher, dass nur Supermärkte ausgewählt werden, die innerhalb einer bestimmten Entfernung zu einer Autobahn liegen.
 		(SELECT 1
-			FROM public.planet_osm_roads AS lr
+			FROM public.planet_osm_roads AS lr -- Diese Tabelle enthält Straßendaten aus OpenStreetMap. Der Alias lr steht hier für "line roads"
 			WHERE lr.highway IN ('motorway')
-				AND ST_DWITHIN(p.way::geometry, lr.way::geometry, 1000));
+				AND ST_DWITHIN(p.way::geometry, lr.way::geometry, 1000)); -- Diese Funktion prüft, ob sich der Supermarkt innerhalb von 1000 Metern (1 km) von einer Autobahn befindet
